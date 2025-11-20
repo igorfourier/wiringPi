@@ -277,3 +277,75 @@ int wiringPiI2CSetup (const int devId)
 
 	return wiringPiI2CSetupInterface (device, devId) ;
 }
+
+
+/*
+ * wiringPiI2CReadReg16bit: 
+ *	Read 8-bit value from 16-bit register address (for VL6180X, etc.)
+ *********************************************************************************
+ */
+
+int wiringPiI2CReadReg16bit (int fd, int reg16)
+{
+	struct i2c_rdwr_ioctl_data	i2c;
+	struct i2c_msg 			msgs[2];
+	uint8_t				reg_addr[2];
+	uint8_t				data[1];
+
+	// Separar dirección de 16-bit en 2 bytes (big-endian)
+	reg_addr[0] = (reg16 >> 8) & 0xFF;	// byte alto
+	reg_addr[1] = reg16 & 0xFF;		// byte bajo
+
+	// Mensaje 1: Escribir dirección del registro (2 bytes)
+	msgs[0].addr	= fdToSlaveAddress[fd];
+	msgs[0].flags	= 0;			// write
+	msgs[0].len	= 2;
+	msgs[0].buf	= reg_addr;
+
+	// Mensaje 2: Leer datos (1 byte)
+	msgs[1].addr	= fdToSlaveAddress[fd];
+	msgs[1].flags	= I2C_M_RD;		// read
+	msgs[1].len	= 1;
+	msgs[1].buf	= data;
+
+	i2c.msgs	= msgs;
+	i2c.nmsgs	= 2;
+
+	if (ioctl(fd, I2C_RDWR, &i2c) < 0)
+		return -1;
+	
+	return data[0] & 0xFF;
+}
+
+
+/*
+ * wiringPiI2CWriteReg16bit:
+ *	Write 8-bit value to 16-bit register address (for VL6180X, etc.) 
+ *********************************************************************************
+ */
+
+int wiringPiI2CWriteReg16bit (int fd, int reg16, int value)
+{
+	struct i2c_rdwr_ioctl_data	i2c;
+	struct i2c_msg			msg;
+	uint8_t				data[3];
+
+	// Preparar datos: 2 bytes dirección + 1 byte valor
+	data[0] = (reg16 >> 8) & 0xFF;		// byte alto dirección
+	data[1] = reg16 & 0xFF;			// byte bajo dirección
+	data[2] = value & 0xFF;			// valor a escribir
+
+	// Mensaje: Escribir dirección + valor (3 bytes total)
+	msg.addr	= fdToSlaveAddress[fd];
+	msg.flags	= 0;			// write
+	msg.len		= 3;
+	msg.buf		= data;
+
+	i2c.msgs	= &msg;
+	i2c.nmsgs	= 1;
+
+	if (ioctl(fd, I2C_RDWR, &i2c) < 0)
+		return -1;
+		
+	return 0;
+}

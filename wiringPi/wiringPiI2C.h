@@ -41,6 +41,10 @@ extern int wiringPiI2CWriteBlock	(int fd, int reg, uint8_t *buff, int size);
 extern int wiringPiI2CSetupInterface	(const char *device, int devId);
 extern int wiringPiI2CSetup		(const int devId);
 
+// Nuevas funciones para direcciones de 16-bit (para VL6180X y similares)
+extern int wiringPiI2CReadReg16bit	(int fd, int reg16);
+extern int wiringPiI2CWriteReg16bit	(int fd, int reg16, int data);
+
 #ifdef __cplusplus
 }
 #endif
